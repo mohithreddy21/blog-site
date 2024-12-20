@@ -1,0 +1,29 @@
+<%- include("partials/header.ejs") %>
+
+<div class="content">
+    <div class="content-header">
+        <h1>My Posts</h1>
+        <button class="btn-create">Create New Post</button>
+    </div>
+    <div class="post-list">
+        <% if(locals.posts){ %>
+            <% posts.forEach(function(post){ %>
+                <div class="post-card">
+                    <h3><%= post["post-title"]  %></h3>
+                    <p><%= post["post-content"] %>...</p>
+                    <div class="actions">
+                        <button class="btn-edit">Edit</button>
+                        <button class="btn-delete">Delete</button>
+                    </div>
+                </div>
+
+            <% }) %>
+        <%  } else { %>
+            <h3>No posts to show</h3>
+        <%  } %>
+
+    </div>
+</div>
+
+
+<%- include("partials/footer.ejs") %>
