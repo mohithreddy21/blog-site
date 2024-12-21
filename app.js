@@ -10,6 +10,7 @@ import multer from "multer";
 const app = express();
 const port = 3000;
 const __dirname = dirname(fileURLToPath(import.meta.url));
+const postsdatapath = path.join(__dirname,"public","data","postsdata.json");
 
 
 const storage = multer.diskStorage({
@@ -27,13 +28,26 @@ app.use(express.static("public"));
 app.use(bodyParser.urlencoded({extended:true}));
 
 
-let profileDetails = {};
-const blogs = [];
+
+let blogs = [];
+fs.readFile(postsdatapath,"utf-8",(err,data)=>{
+
+    try{
+        blogs = JSON.parse(data);
+    }
+    catch(parseError){
+        blogs = [];
+    }
+
+})
 
 
 app.use((req,res,next)=>{
 
     res.locals.posts = blogs;
+    
+
+
     res.locals.imagesPath = imagesPath;
     next();
 })
@@ -77,10 +91,39 @@ app.get("/home",(req,res)=>{
 })
 
 app.post("/create",(req,res)=>{
+    fs.readFile(postsdatapath,"utf-8",(err,data)=>{
+        let storedData = [];
+        if(err){
+            console.log("File doesn't exist!");
+        }
+        else{
+            try{
+                storedData = JSON.parse(data);
+            }
+            catch(parseError){
+                storedData = [];
+            }
+        }
+        storedData.push(req.body);
+
+        fs.writeFile(postsdatapath,JSON.stringify(storedData,null,2),(err)=>{
+            if(err){
+                console.log("Error writing into file");
+            }
+            else{
+                console.log("Data updated successfully");
+            }
+        })
+    })
+
+
+
+
+
     console.log(req.body);
     let newPost = req.body;
     blogs.push(newPost);
-    res.render("create.ejs",newPost);
+    res.render("create.ejs");
 })
 
 
