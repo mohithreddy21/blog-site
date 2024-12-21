@@ -142,6 +142,7 @@ body {
 .header .search-bar {
     flex-grow: 1;
     margin: 0 15px;
+    max-width: 500px;
 }
 
 .header input {
@@ -155,7 +156,14 @@ body {
     display: flex;
     align-items: center;
     gap: 10px;
+    
 }
+
+.profile img{
+    width: 50px;
+}
+
+
 
 .content {
     padding: 20px;
@@ -248,4 +256,99 @@ body {
 
 .post-card .btn-delete:hover {
     background-color: #ec7063;
+}
+
+
+.profile-section {
+    /* max-width: 800px; */
+    width: 90%;
+    margin: 20px auto;
+    padding: 20px;
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    font-family: Arial, sans-serif;
+}
+
+.profile-section h1 {
+    font-size: 24px;
+    margin-bottom: 20px;
+    text-align: center;
+    color: #333;
+}
+
+.profile-section .profile-details {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.profile-section label {
+    font-size: 16px;
+    margin-bottom: 8px;
+    color: #555;
+}
+
+.profile-section input[type="text"],
+.profile-section input[type="file"],
+.profile-section textarea {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 14px;
+    color: #333;
+}
+
+.profile-section input[type="text"]:focus,
+.profile-section textarea:focus {
+    border-color: #007bff;
+    outline: none;
+    box-shadow: 0 0 5px rgba(0, 123, 255, 0.5);
+}
+
+.profile-section .profile-picture {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.profile-section .profile-picture img {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 1px solid #ddd;
+}
+
+.profile-section .actions {
+    display: flex;
+    justify-content: space-between;
+}
+
+.profile-section .btn-save,
+.profile-section .btn-cancel {
+    padding: 10px 20px;
+    font-size: 16px;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.profile-section .btn-save {
+    background-color: #28a745;
+}
+
+.profile-section .btn-save:hover {
+    background-color: #218838;
+}
+
+.profile-section .btn-cancel {
+    background-color: #dc3545;
+}
+
+.profile-section .btn-cancel:hover {
+    background-color: #c82333;
 }

@@ -22,8 +22,17 @@
                 <input type="text" placeholder="Search posts...">
             </div>
             <div class="profile">
-                <img src="https://via.placeholder.com/40" alt="Profile" style="border-radius: 50%;">
-                <span>Username</span>
+                <img src=<% if(locals.imageDetails && locals.imageDetails.filename){%> 
+                    <%= "/images/"+imageDetails.filename %>
+                <% } else { %>
+                    <%= "/images/one.jpg" %> 
+                <%}%> 
+                alt="Profile" style="border-radius: 50%;">
+                <span><% if(locals.profileDetails && locals.profileDetails.name){%>
+                        <%= profileDetails.name %>
+                      <% } else { %>
+                        <%= 'Guest'  %>
+                      <% } %></span>
             </div>
         </div>
-        <div class="content">
+        <div class="content profile-section">
