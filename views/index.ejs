@@ -1,0 +1,25 @@
+<%- include("partials/header.ejs") %>
+
+<div class="content">
+    <div class="content-header">
+        <h1>Community Posts</h1>
+    </div>
+    <div class="post-list">
+        <% if(locals.posts){ %>
+            <% posts.forEach(function(post){ %>
+                <div class="post-card">
+                    <h3><%= post["title"]  %></h3>
+                    <p><%= post["content"] %></p>
+                    <p>author:<%= post["author"] %></p>
+                </div>
+
+            <% }) %>
+        <%  } else { %>
+            <h3>No posts to show</h3>
+        <%  } %>
+
+    </div>
+</div>
+</div>
+
+<%- include("partials/footer.ejs") %>

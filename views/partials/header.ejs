@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blog Dashboard</title>
+    <link rel="stylesheet" href="styles/index.css">
+    <!-- <link rel="stylesheet" href="styles/create.css"> -->
+</head>
+<body>
+    <div class="sidebar">
+        <h2>Blog Manager</h2>
+        <a href="/myposts">My Posts</a>
+        <a href="/create">Create Post</a>
+        <a href="/profile">Profile</a>
+        <a href="/home">Home</a>
+    </div>
+    <div class="main">
+        <div class="header">
+            <div class="logo">Blog Dashboard</div>
+            <div class="search-bar">
+                <input type="text" placeholder="Search posts...">
+            </div>
+            <div class="profile" onclick="window.location.href = '/profile'">
+                <% if(locals.profileDetails && locals.profileDetails.profile_picture){%> 
+                    <img src= <%= "/assets/images/"+profileDetails.profile_picture %> alt="Profile" style="border-radius: 50%;">
+                <% } else { %>
+                    <%  
+                        let initials = "";
+                        if(locals.profileDetails && locals.profileDetails.name){
+                            locals.profileDetails.name.split(" ").forEach((word)=>{initials += word[0]}) 
+                        }else {
+                            initials = "G";
+                        }
+                    %>
+                    <div class="    "><%= initials %></div>
+                <%}%> 
+                
+                <span><% if(locals.profileDetails && locals.profileDetails.name){%>
+                        <%= profileDetails.name %>
+                      <% } else { %>
+                        <%= 'Guest'  %>
+                      <% } %></span>
+            </div>
+        </div>
+        <div class="content profile-section">

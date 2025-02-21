@@ -1,0 +1,50 @@
+<%- include("partials/header.ejs") %>
+
+<div class="content profile-section">
+    <h1>Profile</h1>
+    <div class="profile-details">
+        <form id = "profile-form" enctype="multipart/form-data">
+            <div class="profile-picture">
+                <img src=<% if(locals.profileDetails && locals.profileDetails.profile_picture){%> 
+                    <%= `/assets/images/${profileDetails.profile_picture}` %>
+                <% } else { %>
+                    <%= "/images/one.jpg" %> 
+                <%}%> alt = "profile-picture">
+                <div>
+                    <label for="profile-picture">Change Picture</label>
+                    <input type="file" id="profile-picture" name="profile-picture">
+                </div>
+            </div>
+            <label for="name">Name</label>
+            <% console.log(profileDetails) %>
+            <input type="text" id="name" placeholder="Your Name" value="<%=profileDetails.name %>" name="name">
+            <label for="email">Email</label>
+            <input type="text" id="email" placeholder="Your Email" value="<%= profileDetails.email %>" name="email">
+            <label for="bio">Bio</label>
+            <textarea id="bio" rows="4" placeholder="Write a short bio..." name="bio"><%= profileDetails.bio || 'Write a short bio...'  %></textarea>
+            <div class="actions">
+                <button class="btn-save" type="submit">Save Changes</button>
+                <button class="btn-cancel">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+</div>
+<script>
+    document.getElementById("profile-form").addEventListener("submit",async function updateProfile(event) {
+        event.preventDefault();
+        let formData = new FormData(this);
+        let response = await fetch("/profile",{
+            method:"PATCH",
+            body:formData
+        })
+        let result = await response.json();
+        console.log(result);
+        if(result.redirect){
+            window.location.href = result.redirect;
+        }
+    })
+</script>
+
+<%- include("partials/footer.ejs") %>
