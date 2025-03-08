@@ -8,6 +8,7 @@ import { error } from "console";
 import multer from "multer";
 import connectPgSimple from "connect-pg-simple";
 import session from "express-session";
+import passport from "passport";
 
 
 
@@ -60,6 +61,9 @@ app.use(session({
 }))
 
 
+app.use(passport.initialize());
+app.use(passport.session());
+
 
 
 
@@ -99,22 +103,27 @@ app.get("/loginPage",(req,res)=>{
     res.render("login");
 })
 
-let userDetails;
+
 
 app.post("/submit",async (req,res)=>{
     const {email,password} = req.body;
     const client = await pool.connect();
     try{
-        const result = await client.query("SELECT * FROM users WHERE email = $1",[email]);
-        if(result.rows.length > 0){
-            const storedHashedPassword = result.rows[0].password;
-            userDetails = result.rows[0];
+        const data = await client.query("SELECT * FROM users WHERE email = $1",[email]);
+        if(data.rows.length > 0){
+            const storedHashedPassword = data.rows[0].password;
+            // userDetails = result.rows[0];
             bcrypt.compare(password,storedHashedPassword,(err,result)=>{
                 if(err){
                     console.error("Error comparing passwords",err);
                 }
                 else if(result){
                     console.log("Password Matched");
+                    req.session.user = {
+                        id: data.rows[0].id,
+                        email: data.rows[0].email,
+                        name: data.rows[0].name,
+                    }
                     res.redirect("/home");
                 }
                 else{
@@ -135,9 +144,9 @@ app.post("/submit",async (req,res)=>{
     }
 })
 
-console.log(userDetails);
+
 app.use((req,res,next)=>{
-    res.locals.profileDetails = userDetails;
+    res.locals.profileDetails = req.session.user;
     next(); 
 })
 app.get("/home",async (req,res)=>{
@@ -161,7 +170,7 @@ app.get("/home",async (req,res)=>{
 
 app.get("/myposts",async (req,res)=>{
     const client = await pool.connect();
-    const userId = userDetails.id;
+    const userId = req.session.user.id;
     try{
         const Data = await client.query("SELECT * FROM posts WHERE userid = $1;",[userId]);
         if(Data.rows.length > 0){
@@ -181,22 +190,22 @@ app.get("/myposts",async (req,res)=>{
 
 
 app.get("/profile",(req,res)=>{
-    res.render("profile",{profileDetails : userDetails});
+    res.render("profile",{profileDetails : req.session.user});
 })
 
 app.patch("/profile",upload.single("profile-picture"),async (req,res)=>{
-    console.log(userDetails);
-    const userId = userDetails.id;
+
+    const userId = req.session.user.id;
     const {name,email,bio} = req.body;
     const profilePicture = req.file ? req.file.filename : null;
-    if(req.body.name !== undefined) userDetails.name = name;
-    if(req.body.email !== undefined) userDetails.email = email;
-    if(req.body.bio !== undefined) userDetails.bio = bio;
-    if(req.file) userDetails.profile_picture = profilePicture;
+    if(req.body.name !== undefined) req.session.user.name = name;
+    if(req.body.email !== undefined) req.session.user.email = email;
+    if(req.body.bio !== undefined) req.session.user.bio = bio;
+    if(req.file) req.session.user.profile_picture = profilePicture;
 
     const client = await pool.connect();
     try{
-        await client.query("UPDATE users SET name = $1,email = $2,bio = $3,profile_picture = $4 WHERE id = $5",[userDetails.name,userDetails.email,userDetails.bio,userDetails.profile_picture,userId])
+        await client.query("UPDATE users SET name = $1,email = $2,bio = $3,profile_picture = $4 WHERE id = $5",[name,email,bio,profilePicture,userId])
         res.json({ redirect: "/home" });
     }
     catch(error){
@@ -209,13 +218,13 @@ app.patch("/profile",upload.single("profile-picture"),async (req,res)=>{
 
 
 app.get("/create",(req,res)=>{
-    res.render("create",{profileDetails:userDetails});
+    res.render("create",{profileDetails:req.session.user});
 })
 
 app.post("/create",async (req,res)=>{
     const {title,content} = req.body;
     console.log(req.body);
-    const userId = userDetails.id;
+    const userId = req.session.user.id;
     const client = await pool.connect();
     try{
         const checkPost = await client.query("SELECT * FROM posts WHERE userid = $1 AND title = $2",[userId,title]);
@@ -238,6 +247,22 @@ app.post("/create",async (req,res)=>{
 
 })
 
+
+app.get("/delete/",async (req,res)=>{
+    const postId = req.query.id;
+    const client = await pool.connect();
+    try{
+        await client.query("DELETE FROM POSTS WHERE postid = $1",[postId]);
+        res.redirect("/myposts");
+    }
+    catch(error){
+        console.log("Error executing queries",error);
+        res.status(500).json({ success: false, message: "Internal Server Error" });
+    }
+    finally{
+        client.release();
+    }
+})
 
 app.listen(port,()=>{
     console.log(`Server running from ${port}`);

@@ -12,8 +12,7 @@
                     <p><%= post["content"]%></p>
                     <div class="actions">
                         <button class="btn-edit">Edit</button>
-                        <button class="btn-delete" onclick="deleted()">Delete</button>
-                        
+                        <button class="btn-delete" data-id="<%= post.post_id %>">Delete</button>
                     </div>
                 </div>
 
@@ -24,4 +23,13 @@
 
     </div>
 </div>
+<script>
+    document.querySelectorAll(".btn-delete").forEach(button => {
+    button.addEventListener("click", function() {
+        const postId = this.dataset.id;
+        console.log(postId);
+        window.location.href = `/delete/?id=${postId}`;
+    });
+});
+</script>
 <%- include("partials/footer.ejs") %>
