@@ -4,11 +4,11 @@ import { fileURLToPath } from "url";
 import path, { dirname } from "path";
 import pkg from "pg";
 import bcrypt from "bcrypt";
-import { error } from "console";
 import multer from "multer";
 import connectPgSimple from "connect-pg-simple";
 import session from "express-session";
 import passport from "passport";
+import { Strategy } from "passport-local";
 
 
 
@@ -105,103 +105,91 @@ app.get("/loginPage",(req,res)=>{
 
 
 
-app.post("/submit",async (req,res)=>{
-    const {email,password} = req.body;
-    const client = await pool.connect();
-    try{
-        const data = await client.query("SELECT * FROM users WHERE email = $1",[email]);
-        if(data.rows.length > 0){
-            const storedHashedPassword = data.rows[0].password;
-            // userDetails = result.rows[0];
-            bcrypt.compare(password,storedHashedPassword,(err,result)=>{
-                if(err){
-                    console.error("Error comparing passwords",err);
-                }
-                else if(result){
-                    console.log("Password Matched");
-                    req.session.user = {
-                        id: data.rows[0].id,
-                        email: data.rows[0].email,
-                        name: data.rows[0].name,
-                    }
-                    res.redirect("/home");
-                }
-                else{
-                    console.log("Incorrect Password");
-                }
-            })
-        }
-        else{
-            console.log("User is not registered");
-            res.redirect("/loginPage");
-        }
-    }
-    catch(error){
-        console.log("Error");
-    }
-    finally{
-        client.release();
-    }
+app.post("/submit",passport.authenticate("local",{
+    successRedirect:"/home",
+    failureRedirect:"/loginPage"
 })
+)
 
 
 app.use((req,res,next)=>{
-    res.locals.profileDetails = req.session.user;
+    res.locals.profileDetails = req.user;
     next(); 
 })
+
+
 app.get("/home",async (req,res)=>{
-    const client = await pool.connect();
-    try{
-        const Data = await client.query("SELECT postid AS post_id, posts.title, posts.content, users.name AS author FROM posts JOIN users ON posts.userid = users.id;");
-        if(Data.rows.length > 0){
-            const Posts = Data.rows;
-            console.log(Posts);
-            res.locals.posts = Posts;
+    console.log("Is Authenticated?", req.isAuthenticated());
+    console.log("Session User:", req.user);
+    console.log(req.user);
+    const userId = req.user.id;
+    if(req.isAuthenticated()){
+        const userId = req.user.id;
+        const client = await pool.connect();
+        try{
+            const Data = await client.query("SELECT postid AS post_id, posts.title, posts.content, users.name AS author FROM posts JOIN users ON posts.userid = users.id;");
+            if(Data.rows.length > 0){
+                const Posts = Data.rows;
+                // console.log(Posts);
+                res.locals.posts = Posts;
+            }
         }
+        catch(error){
+            console.log("Error executing queries");
+        }
+        finally{
+            client.release();
+        }
+        res.render("index");
     }
-    catch(error){
-        console.log("Error executing queries");
+    else{
+        res.redirect("/loginPage");
     }
-    finally{
-        client.release();
-    }
-    res.render("index");
 })
 
 app.get("/myposts",async (req,res)=>{
-    const client = await pool.connect();
-    const userId = req.session.user.id;
-    try{
-        const Data = await client.query("SELECT * FROM posts WHERE userid = $1;",[userId]);
-        if(Data.rows.length > 0){
-            const Posts = Data.rows;
-            console.log(Posts);
-            res.locals.posts = Posts;
+    if(req.isAuthenticated()){
+        const client = await pool.connect();
+        const userId = req.user.id;
+        try{
+            const Data = await client.query("SELECT * FROM posts WHERE userid = $1;",[userId]);
+            if(Data.rows.length > 0){
+                const Posts = Data.rows;
+                console.log(Posts);
+                res.locals.posts = Posts;
+            }
         }
+        catch(error){
+            console.log(error);
+        }
+        finally{
+            client.release();
+        }
+        res.render("myposts");
     }
-    catch(error){
-
+    else{
+        res.redirect("/loginPage");
     }
-    finally{
-        client.release();
-    }
-    res.render("myposts");
 })
 
 
 app.get("/profile",(req,res)=>{
-    res.render("profile",{profileDetails : req.session.user});
+    if(req.isAuthenticated()){
+        res.render("profile",{profileDetails : req.user});
+    }
+    else{
+        res.redirect("/loginPage");
+    }
 })
 
 app.patch("/profile",upload.single("profile-picture"),async (req,res)=>{
-
-    const userId = req.session.user.id;
+    const userId = req.user.id;
     const {name,email,bio} = req.body;
     const profilePicture = req.file ? req.file.filename : null;
-    if(req.body.name !== undefined) req.session.user.name = name;
-    if(req.body.email !== undefined) req.session.user.email = email;
-    if(req.body.bio !== undefined) req.session.user.bio = bio;
-    if(req.file) req.session.user.profile_picture = profilePicture;
+    if(req.body.name !== undefined) req.user.name = name;
+    if(req.body.email !== undefined) req.user.email = email;
+    if(req.body.bio !== undefined) req.user.bio = bio;
+    if(req.file) req.user.profile_picture = profilePicture;
 
     const client = await pool.connect();
     try{
@@ -218,13 +206,18 @@ app.patch("/profile",upload.single("profile-picture"),async (req,res)=>{
 
 
 app.get("/create",(req,res)=>{
-    res.render("create",{profileDetails:req.session.user});
+    if(req.isAuthenticated()){
+        res.render("create",{profileDetails:req.user});
+    }
+    else{
+        res.redirect("/loginPage");
+    }
 })
 
 app.post("/create",async (req,res)=>{
     const {title,content} = req.body;
     console.log(req.body);
-    const userId = req.session.user.id;
+    const userId = req.user.id;
     const client = await pool.connect();
     try{
         const checkPost = await client.query("SELECT * FROM posts WHERE userid = $1 AND title = $2",[userId,title]);
@@ -248,20 +241,79 @@ app.post("/create",async (req,res)=>{
 })
 
 
-app.get("/delete/",async (req,res)=>{
-    const postId = req.query.id;
+app.get("/delete",async (req,res)=>{
+    if(req.isAuthenticated()){
+        const postId = req.query.id;
+        const client = await pool.connect();
+        try{
+            await client.query("DELETE FROM POSTS WHERE postid = $1",[postId]);
+            res.redirect("/myposts");
+        }
+        catch(error){
+            console.log("Error executing queries",error);
+            res.status(500).json({ success: false, message: "Internal Server Error" });
+        }
+        finally{
+            client.release();
+        }
+    }
+    else{
+        res.redirect("/loginPage");
+    }
+})
+
+
+passport.use(new Strategy({ usernameField: "email", passReqToCallback: true },async function verify(req,email,password,cb) {
     const client = await pool.connect();
     try{
-        await client.query("DELETE FROM POSTS WHERE postid = $1",[postId]);
-        res.redirect("/myposts");
+        const data = await client.query("SELECT * FROM users WHERE email = $1",[email]);
+        if(data.rows.length > 0){
+            const storedHashedPassword = data.rows[0].password;
+            // userDetails = result.rows[0];
+            await bcrypt.compare(password,storedHashedPassword,(err,result)=>{
+                client.release();
+                if(err){
+                    return cb(err);
+                }
+                else if(result){
+                    console.log("Password Matched");
+                    const user = {
+                        id: data.rows[0].id,
+                        email: data.rows[0].email,
+                        name: data.rows[0].name,
+                        bio: data.rows[0].bio ?? null,
+                        profile_picture: data.rows[0].profile_picture ?? null
+                    }
+                    req.session.user = user;
+                    console.log("Session after setting user:", req.session);
+                    return cb(null,user);
+                }
+                else{
+                    console.log("Incorrect Password");
+                    return cb(null,false);
+                }
+            })
+        }
+        else{
+            client.release();
+            return cb("User is not registered");
+        }
     }
     catch(error){
-        console.log("Error executing queries",error);
-        res.status(500).json({ success: false, message: "Internal Server Error" });
-    }
-    finally{
         client.release();
+        return cb(error);
     }
+}
+))
+
+passport.serializeUser((user,cb)=>{
+
+    cb(null,user);
+})
+
+passport.deserializeUser((user,cb)=>{
+
+    cb(null,user);
 })
 
 app.listen(port,()=>{
