@@ -9,23 +9,25 @@ import connectPgSimple from "connect-pg-simple";
 import session from "express-session";
 import passport from "passport";
 import { Strategy } from "passport-local";
+import env from "dotenv";
 
 
 
 const app = express();
 const port = 3000;
 const __dirname = dirname(fileURLToPath(import.meta.url));
+env.config();
 
 
 
 
 const {Pool} = pkg;
 const pool = new Pool({
-    user:"postgres",
-    password:"mohithreddy",
-    port:5432,
-    database:"blog",
-    host:"localhost"
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    port: process.env.DB_PORT,
+    database:process.env.DB_DATABASE,
+    host:process.env.DB_HOST
 });
 
 const pgSession = connectPgSimple(session);
@@ -54,7 +56,7 @@ app.use(session({
         tableName:"session",
         createTableIfMissing:true
     }),
-    secret:"mysupersecretkey",
+    secret: process.env.SESSION_SECRET,
     resave:false,
     saveUninitialized:false,
     cookie:{secure:false}
@@ -307,12 +309,10 @@ passport.use(new Strategy({ usernameField: "email", passReqToCallback: true },as
 ))
 
 passport.serializeUser((user,cb)=>{
-
     cb(null,user);
 })
 
 passport.deserializeUser((user,cb)=>{
-
     cb(null,user);
 })
 
