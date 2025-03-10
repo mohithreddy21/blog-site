@@ -256,13 +256,21 @@ app.post("/create",async (req,res)=>{
 })
 
 
-app.get("/delete",async (req,res)=>{
+app.delete("/delete",async (req,res)=>{
     if(req.isAuthenticated()){
         const postId = req.query.id;
+        console.log(postId);
         const client = await pool.connect();
+        if(!postId){
+            res.status(400).json({ success: false, message: "Post ID is required" });
+        }
         try{
-            await client.query("DELETE FROM POSTS WHERE postid = $1",[postId]);
-            res.redirect("/myposts");
+            const deletedPost = await client.query("DELETE FROM POSTS WHERE postid = $1",[postId]);
+            if (deletedPost.rowCount > 0) {
+                res.status(200).json({ success: true, message: "Post deleted successfully" });
+            } else {
+                res.status(404).json({ success: false, message: "Post not found" });
+            }
         }
         catch(error){
             console.log("Error executing queries",error);
@@ -326,7 +334,8 @@ passport.use("google",new GoogleStrategy({
     clientSecret: process.env.GOOGLE_CLIENT_SECRET,
     callbackURL : "http://localhost:3000/auth/google/home",
     userProfileURL: "https://www.googleapis.com/oauth2/v3/userinfo",
-    passReqToCallback: true
+    passReqToCallback: true,
+    
 },async (req,accessToken,refreshToken,profile,cb) =>{
     const client = await pool.connect();
     try{
