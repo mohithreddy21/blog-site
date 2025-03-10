@@ -10,7 +10,8 @@ import session from "express-session";
 import passport from "passport";
 import { Strategy } from "passport-local";
 import env from "dotenv";
-
+import GoogleStrategy from "passport-google-oauth20";
+import { profile } from "console";
 
 
 const app = express();
@@ -70,6 +71,7 @@ app.use(passport.session());
 
 
 app.get("/",(req,res)=>{
+
     res.render("register");
 });
 
@@ -124,9 +126,9 @@ app.get("/home",async (req,res)=>{
     console.log("Is Authenticated?", req.isAuthenticated());
     console.log("Session User:", req.user);
     console.log(req.user);
-    const userId = req.user.id;
+    // const userId = req.user.id;
     if(req.isAuthenticated()){
-        const userId = req.user.id;
+        // const userId = req.user.id;
         const client = await pool.connect();
         try{
             const Data = await client.query("SELECT postid AS post_id, posts.title, posts.content, users.name AS author FROM posts JOIN users ON posts.userid = users.id;");
@@ -148,6 +150,17 @@ app.get("/home",async (req,res)=>{
         res.redirect("/loginPage");
     }
 })
+
+app.get("/auth/google",passport.authenticate("google",{
+    scope: ["profile","email"]
+}))
+
+app.get("/auth/google/home",passport.authenticate("google",{
+    successRedirect:"/home",
+    failureRedirect:"/loginPage"
+}))
+
+
 
 app.get("/myposts",async (req,res)=>{
     if(req.isAuthenticated()){
@@ -265,7 +278,7 @@ app.get("/delete",async (req,res)=>{
 })
 
 
-passport.use(new Strategy({ usernameField: "email", passReqToCallback: true },async function verify(req,email,password,cb) {
+passport.use("local",new Strategy({ usernameField: "email", passReqToCallback: true },async function verify(req,email,password,cb) {
     const client = await pool.connect();
     try{
         const data = await client.query("SELECT * FROM users WHERE email = $1",[email]);
@@ -307,6 +320,42 @@ passport.use(new Strategy({ usernameField: "email", passReqToCallback: true },as
     }
 }
 ))
+
+passport.use("google",new GoogleStrategy({
+    clientID: process.env.GOOGLE_CLIENT_ID,
+    clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+    callbackURL : "http://localhost:3000/auth/google/home",
+    userProfileURL: "https://www.googleapis.com/oauth2/v3/userinfo",
+    passReqToCallback: true
+},async (req,accessToken,refreshToken,profile,cb) =>{
+    const client = await pool.connect();
+    try{
+        const result = await client.query("SELECT * FROM users WHERE email = $1",[profile.emails[0].value]);
+        if(result.rows.length > 0){
+            client.release();
+            return cb(null,result.rows[0]);
+        }
+        else{
+            const name = profile.name.givenName;
+            const email = profile.emails[0].value;
+            const password = "LoggedIn with google";
+            const profilepicture = profile.photos[0].value;
+            const newUser = await client.query("INSERT INTO users (name,email,password,profile_picture) VALUES ($1,$2,$3,$4)",[name,email,password,profilepicture]);
+            req.session.user = newUser;
+            res.locals.profileDetails = newUser;
+            console.log(newUser);
+            client.release();
+            return cb(null,newUser);
+        }
+    }
+    catch(error){
+        client.release();
+        return cb(error)
+    }
+
+}));
+
+
 
 passport.serializeUser((user,cb)=>{
     cb(null,user);

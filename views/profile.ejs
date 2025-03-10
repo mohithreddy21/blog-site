@@ -5,11 +5,30 @@
     <div class="profile-details">
         <form id = "profile-form" enctype="multipart/form-data">
             <div class="profile-picture">
-                <img src=<% if(locals.profileDetails && locals.profileDetails.profile_picture){%> 
-                    <%= `/assets/images/${profileDetails.profile_picture}` %>
-                <% } else { %>
-                    <%= "/images/one.jpg" %> 
-                <%}%> alt = "profile-picture">
+                <% if (locals.profileDetails && locals.profileDetails.profile_picture) { %>
+                    <% if (locals.profileDetails.password === "LoggedIn with google") { %>
+                        <% if (!locals.profileDetails.profile_picture.includes("googleusercontent.com")) { %>
+                            <!-- Locally stored profile picture for Google login -->
+                            <img src="<%= "/assets/images/" + locals.profileDetails.profile_picture %>" alt="Profile" style="border-radius: 50%;">
+                        <% } else { %>
+                            <!-- Google profile picture -->
+                            <img src="<%= locals.profileDetails.profile_picture %>" alt="Profile" style="border-radius: 50%;">
+                        <% } %>
+                    <% } else { %>
+                        <!-- Regular login: Always use local profile picture -->
+                        <img src="<%= "/assets/images/" + locals.profileDetails.profile_picture %>" alt="Profile" style="border-radius: 50%;">
+                    <% } %>
+                <% }else { %>
+                    <%  
+                        let initials = "";
+                        if(locals.profileDetails && locals.profileDetails.name){
+                            locals.profileDetails.name.split(" ").forEach((word)=>{initials += word[0]}) 
+                        }else {
+                            initials = "G";
+                        }
+                    %>
+                    <div ><%= initials %></div>
+                <%}%> 
                 <div>
                     <label for="profile-picture">Change Picture</label>
                     <input type="file" id="profile-picture" name="profile-picture">

@@ -22,9 +22,20 @@
                 <input type="text" placeholder="Search posts...">
             </div>
             <div class="profile" onclick="window.location.href = '/profile'">
-                <% if(locals.profileDetails && locals.profileDetails.profile_picture){%> 
-                    <img src= <%= "/assets/images/"+profileDetails.profile_picture %> alt="Profile" style="border-radius: 50%;">
-                <% } else { %>
+                <% if (locals.profileDetails && locals.profileDetails.profile_picture) { %>
+                    <% if (locals.profileDetails.password === "LoggedIn with google") { %>
+                        <% if (!locals.profileDetails.profile_picture.includes("googleusercontent.com")) { %>
+                            <!-- Locally stored profile picture for Google login -->
+                            <img src="<%= "/assets/images/" + locals.profileDetails.profile_picture %>" alt="Profile" style="border-radius: 50%;">
+                        <% } else { %>
+                            <!-- Google profile picture -->
+                            <img src="<%= locals.profileDetails.profile_picture %>" alt="Profile" style="border-radius: 50%;">
+                        <% } %>
+                    <% } else { %>
+                        <!-- Regular login: Always use local profile picture -->
+                        <img src="<%= "/assets/images/" + locals.profileDetails.profile_picture %>" alt="Profile" style="border-radius: 50%;">
+                    <% } %>
+                <% }else { %>
                     <%  
                         let initials = "";
                         if(locals.profileDetails && locals.profileDetails.name){
@@ -33,8 +44,9 @@
                             initials = "G";
                         }
                     %>
-                    <div class="    "><%= initials %></div>
+                    <div ><%= initials %></div>
                 <%}%> 
+
                 
                 <span><% if(locals.profileDetails && locals.profileDetails.name){%>
                         <%= profileDetails.name %>
