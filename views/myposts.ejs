@@ -10,8 +10,9 @@
                 <div class="post-card">
                     <h3><%= post["title"]  %></h3>
                     <p><%= post["content"]%></p>
+                    <input type="text" class="hidden" style="display: none;" id="<%= post["postid"] %>">
                     <div class="actions">
-                        <button class="btn-edit">Edit</button>
+                        <button class="btn-edit" data-id="<%= post["postid"] %>">Edit</button>
                         <button class="btn-delete" data-id="<%= post["postid"] %>">Delete</button>
                     </div>
                 </div>
@@ -36,7 +37,17 @@
             console.log(response);
         }
         // window.location.href = `/delete/?id=${postId}`;
+        });
     });
-});
+    document.querySelectorAll(".btn-edit").forEach((button)=>{
+        button.addEventListener("click",async function(){
+            const postId = this.dataset.id;
+            const inputElement = document.querySelector(`#post${postId} input`);
+            // console.log(inputElement);
+            console.log(inputElement.value);
+
+        })
+    })
+
 </script>
 <%- include("partials/footer.ejs") %>

@@ -3,7 +3,7 @@ import bodyParser from "body-parser";
 import { fileURLToPath } from "url";
 import path, { dirname } from "path";
 import pkg from "pg";
-import bcrypt from "bcrypt";
+import bcrypt from "bcryptjs";
 import multer from "multer";
 import connectPgSimple from "connect-pg-simple";
 import session from "express-session";
@@ -67,9 +67,6 @@ app.use(session({
 app.use(passport.initialize());
 app.use(passport.session());
 
-
-
-
 app.get("/",(req,res)=>{
 
     res.render("register");
@@ -132,10 +129,16 @@ app.get("/home",async (req,res)=>{
         const client = await pool.connect();
         try{
             const Data = await client.query("SELECT postid AS post_id, posts.title, posts.content, users.name AS author FROM posts JOIN users ON posts.userid = users.id;");
+            const profileInfo = await client.query("SELECT * FROM users")
             if(Data.rows.length > 0){
                 const Posts = Data.rows;
                 // console.log(Posts);
                 res.locals.posts = Posts;
+            }
+            if(profileInfo.rows.length>0){
+                const ProfileDetails = profileInfo.rows;
+                res.locals.profileDetails = ProfileDetails;
+
             }
         }
         catch(error){
@@ -339,7 +342,7 @@ passport.use("google",new GoogleStrategy({
 },async (req,accessToken,refreshToken,profile,cb) =>{
     const client = await pool.connect();
     try{
-        const result = await client.query("SELECT * FROM users WHERE email = $1",[profile.emails[0].value]);
+        const result = await client.query("SELECT * FROM users WHERE email = $1 ",[profile.emails[0].value]);
         if(result.rows.length > 0){
             client.release();
             return cb(null,result.rows[0]);
@@ -349,9 +352,8 @@ passport.use("google",new GoogleStrategy({
             const email = profile.emails[0].value;
             const password = "LoggedIn with google";
             const profilepicture = profile.photos[0].value;
-            const newUser = await client.query("INSERT INTO users (name,email,password,profile_picture) VALUES ($1,$2,$3,$4)",[name,email,password,profilepicture]);
-            req.session.user = newUser;
-            res.locals.profileDetails = newUser;
+            const newUser = await client.query("INSERT INTO users (name,email,password,profile_picture) VALUES ($1,$2,$3,$4) RETURNING *",[name,email,password,profilepicture]);
+            req.session.user = newUser.rows[0];
             console.log(newUser);
             client.release();
             return cb(null,newUser);
